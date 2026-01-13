@@ -524,6 +524,36 @@ static void connected(struct bt_conn *conn, uint8_t err) {
 
     update_advertising();
 
+#if defined(CONFIG_BT_USER_PHY_UPDATE)
+    {
+        struct bt_conn_le_phy_param conn_phy_param = {
+            .options = BT_CONN_LE_PHY_OPT_NONE,
+            .pref_tx_phy = BT_GAP_LE_PHY_2M,
+            .pref_rx_phy = BT_GAP_LE_PHY_2M,
+        };
+        int perr = bt_conn_le_phy_update(conn, &conn_phy_param);
+        if (perr) {
+            LOG_DBG("PHY update request failed (%d)", perr);
+        } else {
+            LOG_DBG("Requested 2M PHY");
+        }
+    }
+#endif
+
+#if defined(CONFIG_BT_USER_DATA_LEN)
+    {
+        /* Request maximum data length (typical values: 251 octets, 2120 us)
+         * Controller/host will negotiate what is supported.
+         */
+        int derr = bt_le_set_data_len(conn, 251, 2120);
+        if (derr) {
+            LOG_DBG("Data length request failed (%d)", derr);
+        } else {
+            LOG_DBG("Requested data length extension");
+        }
+    }
+#endif
+
     if (is_conn_active_profile(conn)) {
         LOG_DBG("Active profile connected");
         k_work_submit(&raise_profile_changed_event_work);
